@@ -40,22 +40,21 @@ export class MCPHandler {
     leadsApi = new pipedrive.LeadsApi(apiClient);
   }
 
-  // Manually define the tools based on the old server.ts
   private tools: ToolDefinition[] = [
-    { name: "get-deals", description: "Get all deals from Pipedrive including custom fields", inputSchema: {} },
-    { name: "get-deal", description: "Get a specific deal by ID including custom fields", inputSchema: { dealId: { type: "number", description: "Pipedrive deal ID" } } },
-    { name: "search-deals", description: "Search deals by term", inputSchema: { term: { type: "string", description: "Search term for deals" } } },
-    { name: "get-persons", description: "Get all persons from Pipedrive including custom fields", inputSchema: {} },
-    { name: "get-person", description: "Get a specific person by ID including custom fields", inputSchema: { personId: { type: "number", description: "Pipedrive person ID" } } },
-    { name: "search-persons", description: "Search persons by term", inputSchema: { term: { type: "string", description: "Search term for persons" } } },
-    { name: "get-organizations", description: "Get all organizations from Pipedrive including custom fields", inputSchema: {} },
-    { name: "get-organization", description: "Get a specific organization by ID including custom fields", inputSchema: { organizationId: { type: "number", description: "Pipedrive organization ID" } } },
-    { name: "search-organizations", description: "Search organizations by term", inputSchema: { term: { type: "string", description: "Search term for organizations" } } },
-    { name: "get-pipelines", description: "Get all pipelines from Pipedrive", inputSchema: {} },
-    { name: "get-pipeline", description: "Get a specific pipeline by ID", inputSchema: { pipelineId: { type: "number", description: "Pipedrive pipeline ID" } } },
-    { name: "get-stages", description: "Get all stages from Pipedrive", inputSchema: {} },
-    { name: "search-leads", description: "Search leads by term", inputSchema: { term: { type: "string", description: "Search term for leads" } } },
-    { name: "search-all", description: "Search across all item types (deals, persons, organizations, etc.)", inputSchema: { term: { type: "string", description: "Search term" }, itemTypes: { type: "string", description: "Comma-separated list of item types" } } },
+    { name: "get-deals", description: "Get all deals from Pipedrive including custom fields", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-deal", description: "Get a specific deal by ID including custom fields", inputSchema: { type: "object", properties: { dealId: { type: "number", description: "Pipedrive deal ID" } }, required: ["dealId"] } },
+    { name: "search-deals", description: "Search deals by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for deals" } }, required: ["term"] } },
+    { name: "get-persons", description: "Get all persons from Pipedrive including custom fields", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-person", description: "Get a specific person by ID including custom fields", inputSchema: { type: "object", properties: { personId: { type: "number", description: "Pipedrive person ID" } }, required: ["personId"] } },
+    { name: "search-persons", description: "Search persons by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for persons" } }, required: ["term"] } },
+    { name: "get-organizations", description: "Get all organizations from Pipedrive including custom fields", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-organization", description: "Get a specific organization by ID including custom fields", inputSchema: { type: "object", properties: { organizationId: { type: "number", description: "Pipedrive organization ID" } }, required: ["organizationId"] } },
+    { name: "search-organizations", description: "Search organizations by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for organizations" } }, required: ["term"] } },
+    { name: "get-pipelines", description: "Get all pipelines from Pipedrive", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-pipeline", description: "Get a specific pipeline by ID", inputSchema: { type: "object", properties: { pipelineId: { type: "number", description: "Pipedrive pipeline ID" } }, required: ["pipelineId"] } },
+    { name: "get-stages", description: "Get all stages from Pipedrive", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "search-leads", description: "Search leads by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for leads" } }, required: ["term"] } },
+    { name: "search-all", description: "Search across all item types (deals, persons, organizations, etc.)", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term" }, itemTypes: { type: "string", description: "Comma-separated list of item types" } }, required: ["term"] } },
   ];
 
   async handleInitialize(request: MCPRequest, session: SessionData): Promise<MCPResponse> {
@@ -90,7 +89,7 @@ export class MCPHandler {
       return {
         jsonrpc: "2.0",
         id: request.id,
-        result: result // Return the result directly, as per the original user code
+        result: result
       };
     } catch (error) {
       return this.createErrorResponse(request.id, -32603, `Tool execution failed: ${getErrorMessage(error)}`);
