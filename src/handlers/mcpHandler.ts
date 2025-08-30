@@ -90,7 +90,7 @@ export class MCPHandler {
       return {
         jsonrpc: "2.0",
         id: request.id,
-        result: { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] }
+        result: result // Return the result directly, as per the original user code
       };
     } catch (error) {
       return this.createErrorResponse(request.id, -32603, `Tool execution failed: ${getErrorMessage(error)}`);
