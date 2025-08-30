@@ -9,6 +9,18 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
+// Helper function to log Pipedrive API responses
+async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): Promise<any> {
+    try {
+        const response = await apiPromise;
+        console.log(`[Pipedrive API] Raw response for ${apiCallName}:`, JSON.stringify(response, null, 2));
+        return response.data;
+    } catch (error) {
+        console.error(`[Pipedrive API] Error during ${apiCallName}:`, error);
+        throw error;
+    }
+}
+
 // Pipedrive API clients - will be initialized in the constructor
 let dealsApi: pipedrive.DealsApi;
 let personsApi: pipedrive.PersonsApi;
@@ -104,27 +116,32 @@ export class MCPHandler {
 
   private async executeToolCall(toolName: string, args: any): Promise<any> {
     switch (toolName) {
-      case "get-deals": return (await dealsApi.getDeals()).data;
-      case "get-deal": return (await dealsApi.getDeal({ id: args.dealId })).data;
-      case "search-deals": return (await dealsApi.searchDeals({ term: args.term })).data;
-      case "get-persons": return (await personsApi.getPersons()).data;
-      case "get-person": return (await personsApi.getPerson({ id: args.personId })).data;
-      case "search-persons": return (await personsApi.searchPersons({ term: args.term })).data;
-      case "get-organizations": return (await organizationsApi.getOrganizations()).data;
-      case "get-organization": return (await organizationsApi.getOrganization({ id: args.organizationId })).data;
-      case "search-organizations": return (await organizationsApi.searchOrganizations({ term: args.term })).data;
-      case "get-pipelines": return (await pipelinesApi.getPipelines()).data;
-      case "get-pipeline": return (await pipelinesApi.getPipeline({ id: args.pipelineId })).data;
-      case "search-leads": return (await leadsApi.searchLeads({ term: args.term })).data;
-      case "search-all": return (await itemSearchApi.searchItem({ term: args.term, itemType: args.itemTypes })).data;
+      case "get-deals": return logAndReturnData("get-deals", dealsApi.getDeals());
+      case "get-deal": return logAndReturnData("get-deal", dealsApi.getDeal({ id: args.dealId }));
+      case "search-deals": return logAndReturnData("search-deals", dealsApi.searchDeals({ term: args.term }));
+      case "get-persons": return logAndReturnData("get-persons", personsApi.getPersons());
+      case "get-person": return logAndReturnData("get-person", personsApi.getPerson({ id: args.personId }));
+      case "search-persons": return logAndReturnData("search-persons", personsApi.searchPersons({ term: args.term }));
+      case "get-organizations": return logAndReturnData("get-organizations", organizationsApi.getOrganizations());
+      case "get-organization": return logAndReturnData("get-organization", organizationsApi.getOrganization({ id: args.organizationId }));
+      case "search-organizations": return logAndReturnData("search-organizations", organizationsApi.searchOrganizations({ term: args.term }));
+      case "get-pipelines": return logAndReturnData("get-pipelines", pipelinesApi.getPipelines());
+      case "get-pipeline": return logAndReturnData("get-pipeline", pipelinesApi.getPipeline({ id: args.pipelineId }));
+      case "search-leads": return logAndReturnData("search-leads", leadsApi.searchLeads({ term: args.term }));
+      case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, itemType: args.itemTypes }));
       case "get-stages":
-        const pipelines = (await pipelinesApi.getPipelines()).data || [];
+        const pipelines = (await logAndReturnData("get-stages:pipelines", pipelinesApi.getPipelines())) || [];
         const allStages = [];
         for (const pipeline of pipelines) {
-          const stagesResponse = await fetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pipeline.id}&api_token=${process.env.PIPEDRIVE_API_TOKEN}`);
-          const stagesData = await stagesResponse.json();
-          if (stagesData.success && stagesData.data) {
-            allStages.push(...stagesData.data.map((stage: any) => ({ ...stage, pipeline_name: pipeline.name })));
+          try {
+            const stagesResponse = await fetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pipeline.id}&api_token=${process.env.PIPEDRIVE_API_TOKEN}`);
+            const stagesData = await stagesResponse.json();
+            console.log(`[Pipedrive API] Raw response for get-stages for pipeline ${pipeline.id}:`, JSON.stringify(stagesData, null, 2));
+            if (stagesData.success && stagesData.data) {
+              allStages.push(...stagesData.data.map((stage: any) => ({ ...stage, pipeline_name: pipeline.name })));
+            }
+          } catch(e) {
+              console.error(`[Pipedrive API] Error fetching stages for pipeline ${pipeline.id}:`, e);
           }
         }
         return allStages;
