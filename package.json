@@ -2,12 +2,12 @@
   "name": "pipedrive-mcp-server",
   "version": "1.0.2",
   "description": "Model Context Protocol server for Pipedrive API integration",
-  "main": "build/index.js",
+  "main": "build/server.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node build/index.js",
-    "dev": "node --import tsx src/index.ts"
+    "start": "node build/server.js",
+    "dev": "node --import tsx src/server.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
