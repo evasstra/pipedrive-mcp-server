@@ -14,8 +14,7 @@ async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): 
     try {
         const response = await apiPromise;
         console.log(`[Pipedrive API] Raw response for ${apiCallName}:`, JSON.stringify(response, null, 2));
-        // Return the entire response object, not just the .data property
-        return response;
+        return response.data;
     } catch (error) {
         console.error(`[Pipedrive API] Error during ${apiCallName}:`, error);
         throw error;
@@ -98,12 +97,23 @@ export class MCPHandler {
       if (!tool) {
         return this.createErrorResponse(request.id, -32601, `Tool "${name}" not found`);
       }
-      const result = await this.executeToolCall(name, args);
+
+      const toolResultData = await this.executeToolCall(name, args);
+
+      // Construct the specific response structure provided by the user
+      const responseData = Array.isArray(toolResultData) ? toolResultData : [toolResultData];
 
       return {
         jsonrpc: "2.0",
         id: request.id,
-        result: result
+        result: {
+          content: [
+            {
+              type: "object",
+              data: responseData
+            }
+          ]
+        }
       };
     } catch (error) {
       return this.createErrorResponse(request.id, -32603, `Tool execution failed: ${getErrorMessage(error)}`);
@@ -126,7 +136,8 @@ export class MCPHandler {
       case "search-leads": return logAndReturnData("search-leads", leadsApi.searchLeads({ term: args.term }));
       case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, itemType: args.itemTypes }));
       case "get-stages":
-        const pipelines = (await logAndReturnData("get-stages:pipelines", await pipelinesApi.getPipelines())) || [];
+        const pipelinesData = await logAndReturnData("get-stages:pipelines", pipelinesApi.getPipelines());
+        const pipelines = pipelinesData || [];
         const allStages = [];
         for (const pipeline of pipelines) {
           try {
