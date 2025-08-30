@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 export function requestLogger(req: Request, res: Response, next: NextFunction): void {
   const start = Date.now();
   console.log(`[Request] ---> ${req.method} ${req.originalUrl} from ${req.ip}`);
+  console.log('[Request] Headers:', JSON.stringify(req.headers, null, 2));
 
   res.on('finish', () => {
     const duration = Date.now() - start;
