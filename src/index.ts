@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import express from "express";
+import { setupHttpTransport } from "./http-transport.js";
 import { z } from "zod";
 import * as pipedrive from "pipedrive";
 import * as dotenv from 'dotenv';
@@ -619,11 +620,12 @@ server.prompt(
   })
 );
 
-// Start the server with stdio transport
-const transport = new StdioServerTransport();
-server.connect(transport).catch(err => {
-  console.error("Failed to start MCP server:", err);
-  process.exit(1);
-});
+// Set up and start the HTTP server
+const app = express();
+const port = process.env.PORT || 3000;
 
-console.error("Pipedrive MCP Server started");
+setupHttpTransport(app, server);
+
+app.listen(port, () => {
+  console.log(`Pipedrive MCP Server listening on port ${port}`);
+});
