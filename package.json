@@ -10,7 +10,6 @@
     "dev": "node --import tsx src/index.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.7.1",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "pipedrive": "^22.10.1",
