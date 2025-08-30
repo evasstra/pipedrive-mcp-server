@@ -59,6 +59,19 @@ export class MCPHandler {
     { name: "get-persons", description: "Get all persons from Pipedrive including custom fields", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all persons from Pipedrive including custom fields" } }, required: [] } },
     { name: "get-person", description: "Get a specific person by ID including custom fields", inputSchema: { type: "object", properties: { personId: { type: "number", description: "Pipedrive person ID" } }, required: ["personId"] } },
     { name: "search-persons", description: "Search persons by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for persons" } }, required: ["term"] } },
+    {
+      name: "create-person",
+      description: "Create a new person in Pipedrive.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The name of the person." },
+          email: { type: "string", description: "The email address of the person. Will be marked as 'work'." },
+          phone: { type: "string", description: "The phone number of the person. Will be marked as 'work'." }
+        },
+        required: ["name"]
+      }
+    },
     { name: "get-organizations", description: "Get all organizations from Pipedrive including custom fields", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all organizations from Pipedrive including custom fields" } }, required: [] } },
     { name: "get-organization", description: "Get a specific organization by ID including custom fields", inputSchema: { type: "object", properties: { organizationId: { type: "number", description: "Pipedrive organization ID" } }, required: ["organizationId"] } },
     { name: "search-organizations", description: "Search organizations by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for organizations" } }, required: ["term"] } },
@@ -128,6 +141,15 @@ export class MCPHandler {
       case "get-persons": return logAndReturnData("get-persons", personsApi.getPersons());
       case "get-person": return logAndReturnData("get-person", personsApi.getPerson({ id: args.personId }));
       case "search-persons": return logAndReturnData("search-persons", personsApi.searchPersons({ term: args.term }));
+      case "create-person":
+        const personData: any = { name: args.name };
+        if (args.email) {
+            personData.email = [{ value: args.email, primary: true, label: 'work' }];
+        }
+        if (args.phone) {
+            personData.phone = [{ value: args.phone, primary: true, label: 'work' }];
+        }
+        return logAndReturnData("create-person", (personsApi as any).addPerson(personData));
       case "get-organizations": return logAndReturnData("get-organizations", organizationsApi.getOrganizations());
       case "get-organization": return logAndReturnData("get-organization", organizationsApi.getOrganization({ id: args.organizationId }));
       case "search-organizations": return logAndReturnData("search-organizations", organizationsApi.searchOrganizations({ term: args.term }));
