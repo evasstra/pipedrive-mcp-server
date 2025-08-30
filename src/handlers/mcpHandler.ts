@@ -54,18 +54,18 @@ export class MCPHandler {
   }
 
   private tools: ToolDefinition[] = [
-    { name: "get-deals", description: "Get all deals from Pipedrive including custom fields", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-deals", description: "Get all deals from Pipedrive including custom fields", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all deals from Pipedrive including custom fields" } }, required: [] } },
     { name: "get-deal", description: "Get a specific deal by ID including custom fields", inputSchema: { type: "object", properties: { dealId: { type: "number", description: "Pipedrive deal ID" } }, required: ["dealId"] } },
     { name: "search-deals", description: "Search deals by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for deals" } }, required: ["term"] } },
-    { name: "get-persons", description: "Get all persons from Pipedrive including custom fields", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-persons", description: "Get all persons from Pipedrive including custom fields", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all persons from Pipedrive including custom fields" } }, required: [] } },
     { name: "get-person", description: "Get a specific person by ID including custom fields", inputSchema: { type: "object", properties: { personId: { type: "number", description: "Pipedrive person ID" } }, required: ["personId"] } },
     { name: "search-persons", description: "Search persons by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for persons" } }, required: ["term"] } },
-    { name: "get-organizations", description: "Get all organizations from Pipedrive including custom fields", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-organizations", description: "Get all organizations from Pipedrive including custom fields", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all organizations from Pipedrive including custom fields" } }, required: [] } },
     { name: "get-organization", description: "Get a specific organization by ID including custom fields", inputSchema: { type: "object", properties: { organizationId: { type: "number", description: "Pipedrive organization ID" } }, required: ["organizationId"] } },
     { name: "search-organizations", description: "Search organizations by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for organizations" } }, required: ["term"] } },
-    { name: "get-pipelines", description: "Get all pipelines from Pipedrive", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-pipelines", description: "Get all pipelines from Pipedrive", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all pipelines from Pipedrive" } }, required: [] } },
     { name: "get-pipeline", description: "Get a specific pipeline by ID", inputSchema: { type: "object", properties: { pipelineId: { type: "number", description: "Pipedrive pipeline ID" } }, required: ["pipelineId"] } },
-    { name: "get-stages", description: "Get all stages from Pipedrive", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "get-stages", description: "Get all stages from Pipedrive", inputSchema: { type: "object", properties: { message: { type: "string", description: "Get all stages from Pipedrive" } }, required: [] } },
     { name: "search-leads", description: "Search leads by term", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term for leads" } }, required: ["term"] } },
     { name: "search-all", description: "Search across all item types (deals, persons, organizations, etc.)", inputSchema: { type: "object", properties: { term: { type: "string", description: "Search term" }, itemTypes: { type: "string", description: "Comma-separated list of item types" } }, required: ["term"] } },
   ];
@@ -126,7 +126,7 @@ export class MCPHandler {
       case "search-leads": return logAndReturnData("search-leads", leadsApi.searchLeads({ term: args.term }));
       case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, itemType: args.itemTypes }));
       case "get-stages":
-        const pipelines = (await logAndReturnData("get-stages:pipelines", pipelinesApi.getPipelines())) || [];
+        const pipelines = (await logAndReturnData("get-stages:pipelines", await pipelinesApi.getPipelines())) || [];
         const allStages = [];
         for (const pipeline of pipelines) {
           try {
