@@ -26,15 +26,23 @@ export function setupHttpTransport(app: express.Express, server: McpServer) {
                             const message = JSON.parse(body);
                             console.log(`[${new Date().toISOString()}] Parsed message:`, message);
 
-                            // The server object has a private method `_processRequest` which seems to be the entry point for messages.
-                            // We cast to `any` to bypass TypeScript's private access modifier.
-                            if (typeof (server as any)._processRequest === 'function') {
-                                (server as any)._processRequest(message);
-                            } else {
-                                console.error("FATAL: Could not find a method on the server to process the request.");
-                                if (!res.headersSent) {
-                                    res.status(500).json({ error: 'Server misconfiguration' });
-                                }
+                            // --- Start of inspection code ---
+                            console.log("--- Inspecting server object ---");
+                            let props: string[] = [];
+                            let obj: object = server;
+                            do {
+                                props = props.concat(Object.getOwnPropertyNames(obj));
+                            } while (obj = Object.getPrototypeOf(obj));
+
+                            console.log("All server methods (including non-enumerable and inherited):", props.sort().filter(function (e: string, i: number, arr: string[]) {
+                                if (e != arr[i + 1] && typeof (server as any)[e] === 'function') return true;
+                            }));
+                            console.log("--- End of inspection ---");
+                            // --- End of inspection code ---
+
+                            console.error("Next, provide the server logs so I can identify the correct message handling function.");
+                            if (!res.headersSent) {
+                                res.status(500).json({ error: 'Server inspection running. See logs.' });
                             }
                         }
                     } catch (error) {
@@ -47,16 +55,12 @@ export function setupHttpTransport(app: express.Express, server: McpServer) {
 
                 req.on('close', () => {
                     console.log(`[${new Date().toISOString()}] Connection closed for session ${sessionId}`);
-                    // TODO: We may need to notify the server about the connection closing.
                 });
             },
             send: (message: any) => {
                 console.log(`[${new Date().toISOString()}] Sending response for session ${sessionId}: ${JSON.stringify(message)}`);
                 if (!res.headersSent) {
                     res.json(message);
-                } else if (!res.writableEnded) {
-                    // If headers are sent, we assume a stream might be open, so we write to it.
-                    res.write(JSON.stringify(message));
                 }
             },
             close: () => {
@@ -67,8 +71,6 @@ export function setupHttpTransport(app: express.Express, server: McpServer) {
             }
         };
 
-        // We cast to `any` because our transport object doesn't perfectly match the SDK's `Transport` type,
-        // but it provides the `start`, `send`, and `close` methods that the SDK seems to require at runtime.
         server.connect(transportObject as any).catch(err => {
             console.error(`[${new Date().toISOString()}] Error connecting to MCP server for session ${sessionId}:`, err);
             if (!res.headersSent) {
