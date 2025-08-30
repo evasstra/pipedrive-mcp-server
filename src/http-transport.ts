@@ -27,17 +27,17 @@ export function setupHttpTransport(app: express.Express, server: McpServer) {
                             console.log(`[${new Date().toISOString()}] Parsed message:`, message);
 
                             // --- Start of inspection code ---
-                            console.log("--- Inspecting server object ---");
+                            console.error("--- Inspecting server object ---");
                             let props: string[] = [];
                             let obj: object = server;
                             do {
                                 props = props.concat(Object.getOwnPropertyNames(obj));
                             } while (obj = Object.getPrototypeOf(obj));
 
-                            console.log("All server methods (including non-enumerable and inherited):", props.sort().filter(function (e: string, i: number, arr: string[]) {
+                            console.error("All server methods (including non-enumerable and inherited):", props.sort().filter(function (e: string, i: number, arr: string[]) {
                                 if (e != arr[i + 1] && typeof (server as any)[e] === 'function') return true;
                             }));
-                            console.log("--- End of inspection ---");
+                            console.error("--- End of inspection ---");
                             // --- End of inspection code ---
 
                             console.error("Next, provide the server logs so I can identify the correct message handling function.");
