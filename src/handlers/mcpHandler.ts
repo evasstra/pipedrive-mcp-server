@@ -14,7 +14,8 @@ async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): 
     try {
         const response = await apiPromise;
         console.log(`[Pipedrive API] Raw response for ${apiCallName}:`, JSON.stringify(response, null, 2));
-        return response.data;
+        // Return the entire response object, not just the .data property
+        return response;
     } catch (error) {
         console.error(`[Pipedrive API] Error during ${apiCallName}:`, error);
         throw error;
@@ -97,12 +98,7 @@ export class MCPHandler {
       if (!tool) {
         return this.createErrorResponse(request.id, -32601, `Tool "${name}" not found`);
       }
-      let result = await this.executeToolCall(name, args);
-
-      // N8N expects the result to always be an object. If the tool returns an array, wrap it.
-      if (Array.isArray(result)) {
-        result = { data: result };
-      }
+      const result = await this.executeToolCall(name, args);
 
       return {
         jsonrpc: "2.0",
