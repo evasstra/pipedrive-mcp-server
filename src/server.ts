@@ -13,6 +13,7 @@ export class MCPServer {
   private port: number;
 
   constructor(port: number = 3000) {
+    console.log("[Server] Initializing...");
     this.app = express();
     this.port = port;
     this.sessionManager = new SessionManager();
@@ -23,13 +24,16 @@ export class MCPServer {
       process.exit(1);
     }
     this.mcpHandler = new MCPHandler(pipedriveApiToken);
+    console.log("[Server] MCPHandler initialized.");
 
     this.setupMiddleware();
     this.setupRoutes();
     this.setupErrorHandling();
+    console.log("[Server] Initialization complete.");
   }
 
   private setupMiddleware(): void {
+    console.log("[Server] Setting up middleware...");
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
 
@@ -47,9 +51,11 @@ export class MCPServer {
 
     this.app.use(requestLogger);
     this.app.use(extractSessionId);
+    console.log("[Server] Middleware setup complete.");
   }
 
   private setupRoutes(): void {
+    console.log("[Server] Setting up routes...");
     this.app.get('/health', (req: Request, res: Response) => {
       res.json({ status: 'healthy', uptime: process.uptime() });
     });
@@ -57,6 +63,16 @@ export class MCPServer {
     this.app.post('/mcp', async (req: Request, res: Response) => {
       await this.handleMCPRequest(req, res);
     });
+
+    // Alternative endpoints for compatibility
+    this.app.post('/', async (req: Request, res: Response) => {
+      await this.handleMCPRequest(req, res);
+    });
+
+    this.app.post('/messages', async (req: Request, res: Response) => {
+      await this.handleMCPRequest(req, res);
+    });
+    console.log("[Server] Routes setup complete: GET /health, POST /mcp, POST /, POST /messages");
   }
 
   private async handleMCPRequest(req: Request, res: Response): Promise<void> {
@@ -96,6 +112,7 @@ export class MCPServer {
   }
 
   private setupErrorHandling(): void {
+    console.log("[Server] Setting up error handling.");
     this.app.use(errorHandler);
   }
 
