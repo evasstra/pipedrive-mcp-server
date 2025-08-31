@@ -1,6 +1,14 @@
 import { MCPRequest, MCPResponse, ToolDefinition } from '../types/mcp.js';
 import { SessionData } from '../types/session.js';
-import * as pipedrive from "pipedrive";
+import {
+    Configuration,
+    DealsApi,
+    PersonsApi,
+    OrganizationsApi,
+    PipelinesApi,
+    ItemSearchApi,
+    LeadsApi
+} from 'pipedrive/v2';
 import * as dotenv from 'dotenv';
 
 // Helper function for error handling
@@ -21,13 +29,13 @@ async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): 
     }
 }
 
-// Pipedrive API clients - will be initialized in the constructor
-let dealsApi: pipedrive.DealsApi;
-let personsApi: pipedrive.PersonsApi;
-let organizationsApi: pipedrive.OrganizationsApi;
-let pipelinesApi: pipedrive.PipelinesApi;
-let itemSearchApi: pipedrive.ItemSearchApi;
-let leadsApi: pipedrive.LeadsApi;
+// API clients - will be properties of the handler class
+let dealsApi: DealsApi;
+let personsApi: PersonsApi;
+let organizationsApi: OrganizationsApi;
+let pipelinesApi: PipelinesApi;
+let itemSearchApi: ItemSearchApi;
+let leadsApi: LeadsApi;
 
 export class MCPHandler {
   constructor(pipedriveApiToken: string) {
@@ -35,21 +43,16 @@ export class MCPHandler {
       throw new Error("PIPEDRIVE_API_TOKEN is required for MCPHandler");
     }
 
-    const apiClient = new pipedrive.ApiClient();
-    apiClient.authentications = apiClient.authentications || {};
-    apiClient.authentications['api_key'] = {
-      type: 'apiKey',
-      'in': 'query',
-      name: 'api_token',
-      apiKey: pipedriveApiToken
-    };
+    const apiConfig = new Configuration({
+        apiKey: pipedriveApiToken
+    });
 
-    dealsApi = new pipedrive.DealsApi(apiClient);
-    personsApi = new pipedrive.PersonsApi(apiClient);
-    organizationsApi = new pipedrive.OrganizationsApi(apiClient);
-    pipelinesApi = new pipedrive.PipelinesApi(apiClient);
-    itemSearchApi = new pipedrive.ItemSearchApi(apiClient);
-    leadsApi = new pipedrive.LeadsApi(apiClient);
+    dealsApi = new DealsApi(apiConfig);
+    personsApi = new PersonsApi(apiConfig);
+    organizationsApi = new OrganizationsApi(apiConfig);
+    pipelinesApi = new PipelinesApi(apiConfig);
+    itemSearchApi = new ItemSearchApi(apiConfig);
+    leadsApi = new LeadsApi(apiConfig);
   }
 
   private tools: ToolDefinition[] = [
@@ -113,7 +116,6 @@ export class MCPHandler {
 
       const toolResultData = await this.executeToolCall(name, args);
 
-      // Construct the specific response structure provided by the user
       const responseData = Array.isArray(toolResultData) ? toolResultData : [toolResultData];
 
       return {
@@ -152,11 +154,11 @@ export class MCPHandler {
         return logAndReturnData("create-person", (personsApi as any).addPerson(personData));
       case "get-organizations": return logAndReturnData("get-organizations", organizationsApi.getOrganizations());
       case "get-organization": return logAndReturnData("get-organization", organizationsApi.getOrganization({ id: args.organizationId }));
-      case "search-organizations": return logAndReturnData("search-organizations", organizationsApi.searchOrganizations({ term: args.term }));
+      case "search-organizations": return logAndReturnData("search-organizations", organizationsApi.searchOrganization({ term: args.term }));
       case "get-pipelines": return logAndReturnData("get-pipelines", pipelinesApi.getPipelines());
       case "get-pipeline": return logAndReturnData("get-pipeline", pipelinesApi.getPipeline({ id: args.pipelineId }));
       case "search-leads": return logAndReturnData("search-leads", leadsApi.searchLeads({ term: args.term }));
-      case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, itemType: args.itemTypes }));
+      case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, item_types: args.itemTypes }));
       case "get-stages":
         const pipelinesData = await logAndReturnData("get-stages:pipelines", pipelinesApi.getPipelines());
         const pipelines = pipelinesData || [];
