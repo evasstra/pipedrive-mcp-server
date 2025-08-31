@@ -22,22 +22,21 @@ async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): 
     try {
         const response = await apiPromise;
         console.log(`[Pipedrive API] Raw response for ${apiCallName}:`, JSON.stringify(response, null, 2));
-        return response.data;
+        return response; // Return the entire response object
     } catch (error) {
         console.error(`[Pipedrive API] Error during ${apiCallName}:`, error);
         throw error;
     }
 }
 
-// API clients - will be properties of the handler class
-let dealsApi: DealsApi;
-let personsApi: PersonsApi;
-let organizationsApi: OrganizationsApi;
-let pipelinesApi: PipelinesApi;
-let itemSearchApi: ItemSearchApi;
-let leadsApi: LeadsApi;
-
 export class MCPHandler {
+  private dealsApi: DealsApi;
+  private personsApi: PersonsApi;
+  private organizationsApi: OrganizationsApi;
+  private pipelinesApi: PipelinesApi;
+  private itemSearchApi: ItemSearchApi;
+  private leadsApi: LeadsApi;
+
   constructor(pipedriveApiToken: string) {
     if (!pipedriveApiToken) {
       throw new Error("PIPEDRIVE_API_TOKEN is required for MCPHandler");
@@ -47,12 +46,12 @@ export class MCPHandler {
         apiKey: pipedriveApiToken
     });
 
-    dealsApi = new DealsApi(apiConfig);
-    personsApi = new PersonsApi(apiConfig);
-    organizationsApi = new OrganizationsApi(apiConfig);
-    pipelinesApi = new PipelinesApi(apiConfig);
-    itemSearchApi = new ItemSearchApi(apiConfig);
-    leadsApi = new LeadsApi(apiConfig);
+    this.dealsApi = new DealsApi(apiConfig);
+    this.personsApi = new PersonsApi(apiConfig);
+    this.organizationsApi = new OrganizationsApi(apiConfig);
+    this.pipelinesApi = new PipelinesApi(apiConfig);
+    this.itemSearchApi = new ItemSearchApi(apiConfig);
+    this.leadsApi = new LeadsApi(apiConfig);
   }
 
   private tools: ToolDefinition[] = [
@@ -114,21 +113,13 @@ export class MCPHandler {
         return this.createErrorResponse(request.id, -32601, `Tool "${name}" not found`);
       }
 
-      const toolResultData = await this.executeToolCall(name, args);
-
-      const responseData = Array.isArray(toolResultData) ? toolResultData : [toolResultData];
+      const toolResult = await this.executeToolCall(name, args);
+      const responseData = Array.isArray(toolResult.data) ? toolResult.data : [toolResult.data];
 
       return {
         jsonrpc: "2.0",
         id: request.id,
-        result: {
-          content: [
-            {
-              type: "object",
-              data: responseData
-            }
-          ]
-        }
+        result: { content: [ { type: "object", data: responseData } ] }
       };
     } catch (error) {
       return this.createErrorResponse(request.id, -32603, `Tool execution failed: ${getErrorMessage(error)}`);
@@ -137,45 +128,37 @@ export class MCPHandler {
 
   private async executeToolCall(toolName: string, args: any): Promise<any> {
     switch (toolName) {
-      case "get-deals": return logAndReturnData("get-deals", dealsApi.getDeals());
-      case "get-deal": return logAndReturnData("get-deal", dealsApi.getDeal({ id: args.dealId }));
-      case "search-deals": return logAndReturnData("search-deals", dealsApi.searchDeals({ term: args.term }));
-      case "get-persons": return logAndReturnData("get-persons", personsApi.getPersons());
-      case "get-person": return logAndReturnData("get-person", personsApi.getPerson({ id: args.personId }));
-      case "search-persons": return logAndReturnData("search-persons", personsApi.searchPersons({ term: args.term }));
+      case "get-deals": return logAndReturnData("get-deals", this.dealsApi.getDeals());
+      case "get-deal": return logAndReturnData("get-deal", this.dealsApi.getDeal({ id: args.dealId }));
+      case "search-deals": return logAndReturnData("search-deals", this.dealsApi.searchDeals({ term: args.term }));
+      case "get-persons": return logAndReturnData("get-persons", this.personsApi.getPersons());
+      case "get-person": return logAndReturnData("get-person", this.personsApi.getPerson({ id: args.personId }));
+      case "search-persons": return logAndReturnData("search-persons", this.personsApi.searchPersons({ term: args.term }));
       case "create-person":
         const personData: any = { name: args.name };
-        if (args.email) {
-            personData.email = [{ value: args.email, primary: true, label: 'work' }];
-        }
-        if (args.phone) {
-            personData.phone = [{ value: args.phone, primary: true, label: 'work' }];
-        }
-        return logAndReturnData("create-person", (personsApi as any).addPerson(personData));
-      case "get-organizations": return logAndReturnData("get-organizations", organizationsApi.getOrganizations());
-      case "get-organization": return logAndReturnData("get-organization", organizationsApi.getOrganization({ id: args.organizationId }));
-      case "search-organizations": return logAndReturnData("search-organizations", organizationsApi.searchOrganization({ term: args.term }));
-      case "get-pipelines": return logAndReturnData("get-pipelines", pipelinesApi.getPipelines());
-      case "get-pipeline": return logAndReturnData("get-pipeline", pipelinesApi.getPipeline({ id: args.pipelineId }));
-      case "search-leads": return logAndReturnData("search-leads", leadsApi.searchLeads({ term: args.term }));
-      case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, item_types: args.itemTypes }));
+        if (args.email) { personData.email = [{ value: args.email, primary: true, label: 'work' }]; }
+        if (args.phone) { personData.phone = [{ value: args.phone, primary: true, label: 'work' }]; }
+        return logAndReturnData("create-person", this.personsApi.addPerson(personData));
+      case "get-organizations": return logAndReturnData("get-organizations", this.organizationsApi.getOrganizations());
+      case "get-organization": return logAndReturnData("get-organization", this.organizationsApi.getOrganization({ id: args.organizationId }));
+      case "search-organizations": return logAndReturnData("search-organizations", this.organizationsApi.searchOrganization({ term: args.term }));
+      case "get-pipelines": return logAndReturnData("get-pipelines", this.pipelinesApi.getPipelines());
+      case "get-pipeline": return logAndReturnData("get-pipeline", this.pipelinesApi.getPipeline({ id: args.pipelineId }));
+      case "search-leads": return logAndReturnData("search-leads", this.leadsApi.searchLeads({ term: args.term }));
+      case "search-all": return logAndReturnData("search-all", this.itemSearchApi.searchItem({ term: args.term, item_types: args.itemTypes }));
       case "get-stages":
-        const pipelinesData = await logAndReturnData("get-stages:pipelines", pipelinesApi.getPipelines());
-        const pipelines = pipelinesData || [];
+        const pipelinesData = (await logAndReturnData("get-stages:pipelines", this.pipelinesApi.getPipelines())).data || [];
         const allStages = [];
-        for (const pipeline of pipelines) {
+        for (const pipeline of pipelinesData) {
           try {
             const stagesResponse = await fetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pipeline.id}&api_token=${process.env.PIPEDRIVE_API_TOKEN}`);
             const stagesData = await stagesResponse.json();
-            console.log(`[Pipedrive API] Raw response for get-stages for pipeline ${pipeline.id}:`, JSON.stringify(stagesData, null, 2));
             if (stagesData.success && stagesData.data) {
               allStages.push(...stagesData.data.map((stage: any) => ({ ...stage, pipeline_name: pipeline.name })));
             }
-          } catch(e) {
-              console.error(`[Pipedrive API] Error fetching stages for pipeline ${pipeline.id}:`, e);
-          }
+          } catch(e) { console.error(`[Pipedrive API] Error fetching stages for pipeline ${pipeline.id}:`, e); }
         }
-        return allStages;
+        return { data: allStages }; // Ensure get-stages also returns an object with a data property
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
   }
@@ -191,10 +174,6 @@ export class MCPHandler {
   }
 
   private createErrorResponse(id: any, code: number, message: string): MCPResponse {
-    return {
-      jsonrpc: "2.0",
-      id,
-      error: { code, message }
-    };
+    return { jsonrpc: "2.0", id, error: { code, message } };
   }
 }

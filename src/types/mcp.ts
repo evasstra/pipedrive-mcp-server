@@ -21,5 +21,5 @@ export interface MCPResponse {
 export interface ToolDefinition {
   name: string;
   description: string;
-  inputSchema: any; // Using `any` for simplicity, could be a Zod schema or JSON schema
+  inputSchema: any;
 }
