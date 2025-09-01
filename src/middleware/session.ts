@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
 // Extend the Express Request type to include our custom property
-// This allows us to attach the sessionId to the request object in a type-safe way.
 declare global {
   namespace Express {
     interface Request {

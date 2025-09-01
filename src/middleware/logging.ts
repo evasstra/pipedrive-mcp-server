@@ -5,6 +5,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
   console.log(`[Request] ---> ${req.method} ${req.originalUrl} from ${req.ip}`);
   console.log('[Request] Headers:', JSON.stringify(req.headers, null, 2));
 
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     console.log(`[Request] <--- ${req.method} ${req.originalUrl} - ${res.statusCode} [${duration}ms]`);

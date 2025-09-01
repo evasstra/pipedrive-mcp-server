@@ -64,7 +64,6 @@ export class MCPServer {
       await this.handleMCPRequest(req, res);
     });
 
-    // Alternative endpoints for compatibility
     this.app.post('/', async (req: Request, res: Response) => {
       await this.handleMCPRequest(req, res);
     });
@@ -79,9 +78,9 @@ export class MCPServer {
     try {
       const mcpRequest: MCPRequest = req.body;
 
-      if (!mcpRequest.jsonrpc || mcpRequest.jsonrpc !== "2.0") {
+      if (!mcpRequest || !mcpRequest.jsonrpc || mcpRequest.jsonrpc !== "2.0") {
         res.status(400).json({
-          jsonrpc: "2.0", id: mcpRequest.id || null,
+          jsonrpc: "2.0", id: mcpRequest?.id || null,
           error: { code: -32600, message: "Invalid Request - missing or invalid jsonrpc version" }
         });
         return;
@@ -128,7 +127,6 @@ export class MCPServer {
   }
 }
 
-// Start the server if this file is run directly
 const port = parseInt(process.env.PORT || '3000', 10);
 if (!process.env.PIPEDRIVE_API_TOKEN) {
   console.error("ERROR: PIPEDRIVE_API_TOKEN environment variable is required.");

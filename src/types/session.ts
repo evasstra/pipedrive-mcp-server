@@ -4,7 +4,6 @@ export interface SessionData {
   id: string;
   initialized: boolean;
   createdAt: Date;
-  // Add any other session-specific data here
 }
 
 export class SessionManager {

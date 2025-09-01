@@ -1,6 +1,6 @@
 import { MCPRequest, MCPResponse, ToolDefinition } from '../types/mcp.js';
 import { SessionData } from '../types/session.js';
-import * as pipedrive from "pipedrive";
+import * as pipedrive from 'pipedrive';
 import * as dotenv from 'dotenv';
 
 // Helper function for error handling
@@ -14,42 +14,36 @@ async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): 
     try {
         const response = await apiPromise;
         console.log(`[Pipedrive API] Raw response for ${apiCallName}:`, JSON.stringify(response, null, 2));
-        return response.data;
+        return response; // Return the entire response object
     } catch (error) {
         console.error(`[Pipedrive API] Error during ${apiCallName}:`, error);
         throw error;
     }
 }
 
-// Pipedrive API clients - will be initialized in the constructor
-let dealsApi: pipedrive.DealsApi;
-let personsApi: pipedrive.PersonsApi;
-let organizationsApi: pipedrive.OrganizationsApi;
-let pipelinesApi: pipedrive.PipelinesApi;
-let itemSearchApi: pipedrive.ItemSearchApi;
-let leadsApi: pipedrive.LeadsApi;
-
 export class MCPHandler {
+  private dealsApi: any;
+  private personsApi: any;
+  private organizationsApi: any;
+  private pipelinesApi: any;
+  private itemSearchApi: any;
+  private leadsApi: any;
+
   constructor(pipedriveApiToken: string) {
     if (!pipedriveApiToken) {
       throw new Error("PIPEDRIVE_API_TOKEN is required for MCPHandler");
     }
 
-    const apiClient = new pipedrive.ApiClient();
-    apiClient.authentications = apiClient.authentications || {};
-    apiClient.authentications['api_key'] = {
-      type: 'apiKey',
-      'in': 'query',
-      name: 'api_token',
-      apiKey: pipedriveApiToken
-    };
+    const apiConfig = new pipedrive.V2.Configuration({
+        apiKey: pipedriveApiToken
+    });
 
-    dealsApi = new pipedrive.DealsApi(apiClient);
-    personsApi = new pipedrive.PersonsApi(apiClient);
-    organizationsApi = new pipedrive.OrganizationsApi(apiClient);
-    pipelinesApi = new pipedrive.PipelinesApi(apiClient);
-    itemSearchApi = new pipedrive.ItemSearchApi(apiClient);
-    leadsApi = new pipedrive.LeadsApi(apiClient);
+    this.dealsApi = new pipedrive.V2.DealsApi(apiConfig);
+    this.personsApi = new pipedrive.V2.PersonsApi(apiConfig);
+    this.organizationsApi = new pipedrive.V2.OrganizationsApi(apiConfig);
+    this.pipelinesApi = new pipedrive.V2.PipelinesApi(apiConfig);
+    this.itemSearchApi = new pipedrive.V2.ItemSearchApi(apiConfig);
+    this.leadsApi = new pipedrive.V2.LeadsApi(apiConfig);
   }
 
   private tools: ToolDefinition[] = [
@@ -111,22 +105,14 @@ export class MCPHandler {
         return this.createErrorResponse(request.id, -32601, `Tool "${name}" not found`);
       }
 
-      const toolResultData = await this.executeToolCall(name, args);
+      const toolResult = await this.executeToolCall(name, args);
 
-      // Construct the specific response structure provided by the user
-      const responseData = Array.isArray(toolResultData) ? toolResultData : [toolResultData];
+      const responseData = toolResult.data ? (Array.isArray(toolResult.data) ? toolResult.data : [toolResult.data]) : [];
 
       return {
         jsonrpc: "2.0",
         id: request.id,
-        result: {
-          content: [
-            {
-              type: "object",
-              data: responseData
-            }
-          ]
-        }
+        result: { content: [ { type: "object", data: responseData } ] }
       };
     } catch (error) {
       return this.createErrorResponse(request.id, -32603, `Tool execution failed: ${getErrorMessage(error)}`);
@@ -135,45 +121,37 @@ export class MCPHandler {
 
   private async executeToolCall(toolName: string, args: any): Promise<any> {
     switch (toolName) {
-      case "get-deals": return logAndReturnData("get-deals", dealsApi.getDeals());
-      case "get-deal": return logAndReturnData("get-deal", dealsApi.getDeal({ id: args.dealId }));
-      case "search-deals": return logAndReturnData("search-deals", dealsApi.searchDeals({ term: args.term }));
-      case "get-persons": return logAndReturnData("get-persons", personsApi.getPersons());
-      case "get-person": return logAndReturnData("get-person", personsApi.getPerson({ id: args.personId }));
-      case "search-persons": return logAndReturnData("search-persons", personsApi.searchPersons({ term: args.term }));
+      case "get-deals": return logAndReturnData("get-deals", this.dealsApi.getDeals());
+      case "get-deal": return logAndReturnData("get-deal", this.dealsApi.getDeal({ id: args.dealId }));
+      case "search-deals": return logAndReturnData("search-deals", this.dealsApi.searchDeals({ term: args.term }));
+      case "get-persons": return logAndReturnData("get-persons", this.personsApi.getPersons());
+      case "get-person": return logAndReturnData("get-person", this.personsApi.getPerson({ id: args.personId }));
+      case "search-persons": return logAndReturnData("search-persons", this.personsApi.searchPersons({ term: args.term }));
       case "create-person":
         const personData: any = { name: args.name };
-        if (args.email) {
-            personData.email = [{ value: args.email, primary: true, label: 'work' }];
-        }
-        if (args.phone) {
-            personData.phone = [{ value: args.phone, primary: true, label: 'work' }];
-        }
-        return logAndReturnData("create-person", (personsApi as any).addPerson(personData));
-      case "get-organizations": return logAndReturnData("get-organizations", organizationsApi.getOrganizations());
-      case "get-organization": return logAndReturnData("get-organization", organizationsApi.getOrganization({ id: args.organizationId }));
-      case "search-organizations": return logAndReturnData("search-organizations", organizationsApi.searchOrganizations({ term: args.term }));
-      case "get-pipelines": return logAndReturnData("get-pipelines", pipelinesApi.getPipelines());
-      case "get-pipeline": return logAndReturnData("get-pipeline", pipelinesApi.getPipeline({ id: args.pipelineId }));
-      case "search-leads": return logAndReturnData("search-leads", leadsApi.searchLeads({ term: args.term }));
-      case "search-all": return logAndReturnData("search-all", itemSearchApi.searchItem({ term: args.term, itemType: args.itemTypes }));
+        if (args.email) { personData.email = [{ value: args.email, primary: true, label: 'work' }]; }
+        if (args.phone) { personData.phone = [{ value: args.phone, primary: true, label: 'work' }]; }
+        return logAndReturnData("create-person", this.personsApi.addPerson(personData));
+      case "get-organizations": return logAndReturnData("get-organizations", this.organizationsApi.getOrganizations());
+      case "get-organization": return logAndReturnData("get-organization", this.organizationsApi.getOrganization({ id: args.organizationId }));
+      case "search-organizations": return logAndReturnData("search-organizations", this.organizationsApi.searchOrganization({ term: args.term }));
+      case "get-pipelines": return logAndReturnData("get-pipelines", this.pipelinesApi.getPipelines());
+      case "get-pipeline": return logAndReturnData("get-pipeline", this.pipelinesApi.getPipeline({ id: args.pipelineId }));
+      case "search-leads": return logAndReturnData("search-leads", this.leadsApi.searchLeads({ term: args.term }));
+      case "search-all": return logAndReturnData("search-all", this.itemSearchApi.searchItem({ term: args.term, item_types: args.itemTypes }));
       case "get-stages":
-        const pipelinesData = await logAndReturnData("get-stages:pipelines", pipelinesApi.getPipelines());
-        const pipelines = pipelinesData || [];
+        const pipelinesData = (await logAndReturnData("get-stages:pipelines", this.pipelinesApi.getPipelines())).data || [];
         const allStages = [];
-        for (const pipeline of pipelines) {
+        for (const pipeline of pipelinesData) {
           try {
             const stagesResponse = await fetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pipeline.id}&api_token=${process.env.PIPEDRIVE_API_TOKEN}`);
             const stagesData = await stagesResponse.json();
-            console.log(`[Pipedrive API] Raw response for get-stages for pipeline ${pipeline.id}:`, JSON.stringify(stagesData, null, 2));
             if (stagesData.success && stagesData.data) {
               allStages.push(...stagesData.data.map((stage: any) => ({ ...stage, pipeline_name: pipeline.name })));
             }
-          } catch(e) {
-              console.error(`[Pipedrive API] Error fetching stages for pipeline ${pipeline.id}:`, e);
-          }
+          } catch(e) { console.error(`[Pipedrive API] Error fetching stages for pipeline ${pipeline.id}:`, e); }
         }
-        return allStages;
+        return { data: allStages };
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
   }
@@ -189,10 +167,6 @@ export class MCPHandler {
   }
 
   private createErrorResponse(id: any, code: number, message: string): MCPResponse {
-    return {
-      jsonrpc: "2.0",
-      id,
-      error: { code, message }
-    };
+    return { jsonrpc: "2.0", id, error: { code, message } };
   }
 }
