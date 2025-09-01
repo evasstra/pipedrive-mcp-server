@@ -1,7 +1,7 @@
 {
   "name": "pipedrive-mcp-server",
-  "version": "1.0.2",
-  "description": "Model Context Protocol server for Pipedrive API integration",
+  "version": "2.0.0",
+  "description": "Model Context Protocol server for Pipedrive API integration, compatible with N8N",
   "main": "build/server.js",
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.7",
+    "express": "^5.1.0",
     "pipedrive": "^28.0.2",
     "ts-node": "^10.9.2",
     "zod": "^3.22.4"
@@ -18,7 +19,6 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^20.10.5",
-    "express": "^5.1.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   },
@@ -29,11 +29,12 @@
   "keywords": [
     "pipedrive",
     "mcp",
+    "n8n",
     "model-context-protocol",
     "api",
     "crm"
   ],
-  "author": "Will Dent",
+  "author": "Will Dent & Jules",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/WillDent/pipedrive-mcp-server/issues"

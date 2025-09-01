@@ -1,14 +1,6 @@
 import { MCPRequest, MCPResponse, ToolDefinition } from '../types/mcp.js';
 import { SessionData } from '../types/session.js';
-import {
-    Configuration,
-    DealsApi,
-    PersonsApi,
-    OrganizationsApi,
-    PipelinesApi,
-    ItemSearchApi,
-    LeadsApi
-} from 'pipedrive/v2';
+import * as pipedrive from 'pipedrive';
 import * as dotenv from 'dotenv';
 
 // Helper function for error handling
@@ -30,28 +22,28 @@ async function logAndReturnData(apiCallName: string, apiPromise: Promise<any>): 
 }
 
 export class MCPHandler {
-  private dealsApi: DealsApi;
-  private personsApi: PersonsApi;
-  private organizationsApi: OrganizationsApi;
-  private pipelinesApi: PipelinesApi;
-  private itemSearchApi: ItemSearchApi;
-  private leadsApi: LeadsApi;
+  private dealsApi: any;
+  private personsApi: any;
+  private organizationsApi: any;
+  private pipelinesApi: any;
+  private itemSearchApi: any;
+  private leadsApi: any;
 
   constructor(pipedriveApiToken: string) {
     if (!pipedriveApiToken) {
       throw new Error("PIPEDRIVE_API_TOKEN is required for MCPHandler");
     }
 
-    const apiConfig = new Configuration({
+    const apiConfig = new pipedrive.V2.Configuration({
         apiKey: pipedriveApiToken
     });
 
-    this.dealsApi = new DealsApi(apiConfig);
-    this.personsApi = new PersonsApi(apiConfig);
-    this.organizationsApi = new OrganizationsApi(apiConfig);
-    this.pipelinesApi = new PipelinesApi(apiConfig);
-    this.itemSearchApi = new ItemSearchApi(apiConfig);
-    this.leadsApi = new LeadsApi(apiConfig);
+    this.dealsApi = new pipedrive.V2.DealsApi(apiConfig);
+    this.personsApi = new pipedrive.V2.PersonsApi(apiConfig);
+    this.organizationsApi = new pipedrive.V2.OrganizationsApi(apiConfig);
+    this.pipelinesApi = new pipedrive.V2.PipelinesApi(apiConfig);
+    this.itemSearchApi = new pipedrive.V2.ItemSearchApi(apiConfig);
+    this.leadsApi = new pipedrive.V2.LeadsApi(apiConfig);
   }
 
   private tools: ToolDefinition[] = [
@@ -114,7 +106,8 @@ export class MCPHandler {
       }
 
       const toolResult = await this.executeToolCall(name, args);
-      const responseData = Array.isArray(toolResult.data) ? toolResult.data : [toolResult.data];
+
+      const responseData = toolResult.data ? (Array.isArray(toolResult.data) ? toolResult.data : [toolResult.data]) : [];
 
       return {
         jsonrpc: "2.0",
@@ -158,7 +151,7 @@ export class MCPHandler {
             }
           } catch(e) { console.error(`[Pipedrive API] Error fetching stages for pipeline ${pipeline.id}:`, e); }
         }
-        return { data: allStages }; // Ensure get-stages also returns an object with a data property
+        return { data: allStages };
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
   }
